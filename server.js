@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
 const sequelize = require('./config/database');
@@ -220,5 +221,5 @@ sequelize.sync({ alter: true }).then(async () => {
         defaults: { name: 'Admin Master', role: 'admin' } 
     });
 
-    app.listen(3000, () => console.log('Servidor operacional em http://localhost:3000'));
+    app.listen(process.env.PORT || 3000, () => console.log('Servidor operacional em http://localhost:3000'));
 });
