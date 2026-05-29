@@ -5,6 +5,7 @@ const sequelize = require('./config/database');
 const Feedback = require('./models/Feedback');
 const User = require('./models/User');
 const Config = require('./models/Config');
+const { Op } = require('sequelize');
 
 const app = express();
 
@@ -138,6 +139,52 @@ app.get('/', checkAuth, async (req, res) => {
         res.render('index', { userName: req.session.userName, tags });
     } catch (error) {
         res.status(500).send("Erro no servidor.");
+    }
+});
+
+app.post('/feedback', async (req, res) => {
+    const userId = req.session.userId; // Ou a forma que você gerencia o login
+    const { humor, tags } = req.body;
+
+    // 1. Descobrir o início do dia de hoje
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    // 2. Buscar se já existe um feedback hoje
+    const existingFeedback = await Feedback.findOne({
+        where: {
+            userId: userId,
+            createdAt: {
+                [Op.gte]: startOfToday // Criado de hoje à meia-noite em diante
+            }
+        }
+    });
+
+    // 3. Bloquear se já existir
+    if (existingFeedback) {
+        // Redireciona de volta com uma mensagem de erro ou aviso
+        return res.render('dashboard', { 
+            error: 'Você já registrou seu diário de bordo hoje. Volte amanhã!' 
+        });
+    }
+
+    // 4. Se não existir, salva no banco normalmente
+    await Feedback.create({ userId, humor, tags });
+    res.redirect('/dashboard?success=true');
+});
+
+
+// Rota para deletar feedback
+app.post('/admin/feedback/delete/:id', checkAdmin, async (req, res) => {
+    try {
+        await Feedback.destroy({
+            where: { id: req.params.id }
+        });
+        // Corrigido para redirecionar para a rota certa do seu painel
+        res.redirect('/admin'); 
+    } catch (error) {
+        console.error('Erro ao deletar:', error);
+        res.status(500).send('Erro ao deletar o registro.');
     }
 });
 

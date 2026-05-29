@@ -15,6 +15,10 @@ const User = sequelize.define('User', {
     role: {
         type: DataTypes.ENUM('student', 'admin'),
         defaultValue: 'student'
+    },
+    turma: {
+        type: DataTypes.STRING,
+        allowNull: true, // Pode ser null para os administradores
     }
 });
 

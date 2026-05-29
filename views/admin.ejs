@@ -1,15 +1,16 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel Avançado de Governança</title>
-    
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -23,14 +24,17 @@
 
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <script type="text/javascript">
-        google.charts.load('current', {'packages':['corechart']});
+        google.charts.load('current', { 'packages': ['corechart'] });
         google.charts.setOnLoadCallback(() => updateDashboard());
 
         const rawFeedbacks = <%- JSON.stringify(feedbacks) %>;
 
         function updateDashboard() {
             const nameFilter = document.getElementById('filterName').value.toLowerCase();
+            const turmaFilter = document.getElementById('filterTurma').value.toLowerCase();
             const sentimentFilter = document.getElementById('filterSentiment').value;
+            const dateStart = document.getElementById('filterDateStart').value;
+            const dateEnd = document.getElementById('filterDateEnd').value;
 
             let scores = [0, 0, 0, 0, 0, 0];
             let totalFiltrados = 0;
@@ -38,25 +42,40 @@
 
             rawFeedbacks.forEach((item) => {
                 const rowEl = document.getElementById(`row-${item.id}`);
-                const studentName = item.User ? item.User.name.toLowerCase() : 'desconhecido';
                 
-                const matchesName = studentName.includes(nameFilter);
-                const matchesSentiment = sentimentFilter === 'all' || item.sentiment_score.toString() === sentimentFilter;
+                // Dados do Aluno
+                const studentName = item.User ? item.User.name.toLowerCase() : 'desconhecido';
+                const studentTurma = (item.User && item.User.turma) ? item.User.turma.toLowerCase() : '';
+                
+                // Formatação segura de Data
+                const itemDate = new Date(item.createdAt);
+                const localDateStr = itemDate.getFullYear() + '-' + 
+                                     String(itemDate.getMonth() + 1).padStart(2, '0') + '-' + 
+                                     String(itemDate.getDate()).padStart(2, '0');
 
-                if (matchesName && matchesSentiment) {
-                    if(rowEl) rowEl.classList.remove('hidden');
+                // Filtros
+                const matchesName = studentName.includes(nameFilter);
+                const matchesTurma = studentTurma.includes(turmaFilter);
+                const matchesSentiment = sentimentFilter === 'all' || item.sentiment_score.toString() === sentimentFilter;
+                
+                let matchesDate = true;
+                if (dateStart && localDateStr < dateStart) matchesDate = false;
+                if (dateEnd && localDateStr > dateEnd) matchesDate = false;
+
+                if (matchesName && matchesTurma && matchesSentiment && matchesDate) {
+                    if (rowEl) rowEl.classList.remove('hidden');
                     scores[item.sentiment_score]++;
                     totalFiltrados++;
                     somaFiltrados += item.sentiment_score;
                 } else {
-                    if(rowEl) rowEl.classList.add('hidden');
+                    if (rowEl) rowEl.classList.add('hidden');
                 }
             });
 
             const novaMedia = totalFiltrados > 0 ? (somaFiltrados / totalFiltrados).toFixed(1) : '0.0';
             document.getElementById('kpiTotal').innerText = totalFiltrados;
             document.getElementById('kpiMedia').innerText = novaMedia;
-            
+
             let novoClima = '😐';
             if (novaMedia >= 4.5) novoClima = '🤩';
             else if (novaMedia >= 3.5) novoClima = '🙂';
@@ -67,20 +86,20 @@
             var data = google.visualization.arrayToDataTable([
                 ['Humor', 'Quantidade'],
                 ['😫 Crítico', scores[1]],
-                ['😕 Ruim',    scores[2]],
-                ['😐 Neutro',  scores[3]],
-                ['🙂 Bom',     scores[4]],
+                ['😕 Ruim', scores[2]],
+                ['😐 Neutro', scores[3]],
+                ['🙂 Bom', scores[4]],
                 ['🤩 Excelente', scores[5]]
             ]);
 
             var options = {
                 pieHole: 0.55,
                 colors: ['#F87171', '#FBBF24', '#94A3B8', '#60A5FA', '#34D399'],
-                chartArea: {width: '100%', height: '85%'},
+                chartArea: { width: '100%', height: '85%' },
                 legend: {
-                    position: 'right', 
+                    position: 'right',
                     alignment: 'center',
-                    textStyle: {color: '#64748b', fontSize: 13, fontName: 'Inter'}
+                    textStyle: { color: '#64748b', fontSize: 13, fontName: 'Inter' }
                 },
                 backgroundColor: 'transparent',
                 pieSliceBorderColor: 'transparent',
@@ -92,16 +111,17 @@
         }
     </script>
 </head>
+
 <body class="bg-[#F8FAFC] font-sans min-h-screen antialiased text-slate-800 p-4 md:p-8">
 
     <div class="max-w-7xl mx-auto">
-        
+
         <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between pb-8 mb-8 border-b border-slate-200/70 gap-6">
             <div>
                 <h1 class="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">Console de Governança</h1>
                 <p class="text-sm text-slate-500 mt-1 font-medium">Mapeamento de clima interno, controle de janelas e auditoria ativa.</p>
             </div>
-            
+
             <div class="flex flex-wrap items-center gap-3">
                 <form action="/admin/toggle-feedback" method="POST" class="inline">
                     <button type="submit" class="inline-flex items-center gap-2 font-semibold text-xs px-5 py-2.5 rounded-full transition-all duration-200 shadow-sm border <%= isOpen ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100' %>">
@@ -129,11 +149,28 @@
             <div class="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-widest pl-4 pr-3 py-2 md:border-r border-slate-100 shrink-0">
                 <i class="ph ph-faders text-lg"></i> Filtros
             </div>
+            
             <div class="flex-1 w-full relative">
                 <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg"></i>
-                <input type="text" id="filterName" oninput="updateDashboard()" placeholder="Buscar por nome do aluno ou colaborador..." class="w-full bg-transparent text-sm py-3 pl-10 pr-4 outline-none text-slate-700 placeholder-slate-400">
+                <input type="text" id="filterName" oninput="updateDashboard()" placeholder="Buscar aluno..." class="w-full bg-transparent text-sm py-3 pl-10 pr-2 outline-none text-slate-700 placeholder-slate-400">
             </div>
-            <div class="w-full md:w-64 border-t md:border-t-0 md:border-l border-slate-100">
+
+            <div class="w-full md:w-32 border-t md:border-t-0 md:border-l border-slate-100 relative">
+                <i class="ph ph-users-three absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg"></i>
+                <input type="text" id="filterTurma" oninput="updateDashboard()" placeholder="Turma..." class="w-full bg-transparent text-sm py-3 pl-10 pr-2 outline-none text-slate-700 placeholder-slate-400">
+            </div>
+
+            <div class="w-full md:w-36 border-t md:border-t-0 md:border-l border-slate-100 flex items-center px-2">
+                <span class="text-xs text-slate-400 mr-1">De:</span>
+                <input type="date" id="filterDateStart" onchange="updateDashboard()" class="w-full bg-transparent text-sm py-3 outline-none text-slate-700 text-slate-500 cursor-pointer">
+            </div>
+
+            <div class="w-full md:w-36 border-t md:border-t-0 md:border-l border-slate-100 flex items-center px-2">
+                <span class="text-xs text-slate-400 mr-1">Até:</span>
+                <input type="date" id="filterDateEnd" onchange="updateDashboard()" class="w-full bg-transparent text-sm py-3 outline-none text-slate-700 text-slate-500 cursor-pointer">
+            </div>
+
+            <div class="w-full md:w-48 border-t md:border-t-0 md:border-l border-slate-100">
                 <select id="filterSentiment" onchange="updateDashboard()" class="w-full bg-transparent text-sm py-3 px-4 outline-none cursor-pointer text-slate-700 font-medium">
                     <option value="all">Todos os humores</option>
                     <option value="5">Excelente</option>
@@ -146,22 +183,26 @@
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
             <div class="lg:col-span-2 space-y-8">
-                
                 <div class="grid grid-cols-2 gap-6">
                     <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex justify-between items-start group hover:border-slate-300 transition-colors">
                         <div>
                             <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-2">Índice Médio</p>
-                            <h4 class="text-4xl font-black text-slate-900 tracking-tight" id="kpiMedia"><%= mediaSentimento %></h4>
+                            <h4 class="text-4xl font-black text-slate-900 tracking-tight" id="kpiMedia">
+                                <%= mediaSentimento %>
+                            </h4>
                         </div>
-                        <div class="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center border border-slate-100 text-2xl" id="kpiClima"><%= climaGeral %></div>
+                        <div class="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center border border-slate-100 text-2xl" id="kpiClima">
+                            <%= climaGeral %>
+                        </div>
                     </div>
 
                     <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex justify-between items-start group hover:border-slate-300 transition-colors">
                         <div>
                             <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-2">Amostras Coletadas</p>
-                            <h4 class="text-4xl font-black text-slate-900 tracking-tight" id="kpiTotal"><%= totalRespostas %></h4>
+                            <h4 class="text-4xl font-black text-slate-900 tracking-tight" id="kpiTotal">
+                                <%= totalRespostas %>
+                            </h4>
                         </div>
                         <div class="w-12 h-12 rounded-full bg-indigo-50/50 flex items-center justify-center border border-indigo-50 text-indigo-500">
                             <i class="ph ph-chart-polar text-2xl"></i>
@@ -187,14 +228,22 @@
                                     <th class="px-6 py-4 border-b border-slate-100">Humor</th>
                                     <th class="px-6 py-4 border-b border-slate-100">Marcadores</th>
                                     <th class="px-6 py-4 border-b border-slate-100">Notas de Contexto</th>
+                                    <th class="px-6 py-4 border-b border-slate-100">Ação</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100 text-sm text-slate-600">
                                 <% feedbacks.forEach(item => { %>
                                     <tr id="row-<%= item.id %>" class="feedback-row hover:bg-slate-50/80 transition-colors">
                                         <td class="px-6 py-4">
-                                            <div class="font-semibold text-slate-900"><%= item.User ? item.User.name : 'Desconhecido' %></div>
-                                            <div class="text-[11px] text-slate-400 mt-1"><%= new Date(item.createdAt).toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit'}) %></div>
+                                            <div class="font-semibold text-slate-900">
+                                                <%= item.User ? item.User.name : 'Desconhecido' %>
+                                            </div>
+                                            <div class="text-[11px] text-indigo-500 font-semibold mt-0.5">
+                                                Turma: <%= item.User && item.User.turma ? item.User.turma : 'Não atribuída' %>
+                                            </div>
+                                            <div class="text-[10px] text-slate-400 mt-1">
+                                                <%= new Date(item.createdAt).toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit'}) %>
+                                            </div>
                                         </td>
                                         <td class="px-6 py-4 text-2xl select-none">
                                             <%= {1:'😫', 2:'😕', 3:'😐', 4:'🙂', 5:'🤩'}[item.sentiment_score] %>
@@ -212,7 +261,16 @@
                                                 <span class="text-slate-300 italic text-xs">Nenhum</span>
                                             <% } %>
                                         </td>
-                                        <td class="px-6 py-4 text-slate-500 max-w-xs truncate"><%= item.comments || '—' %></td>
+                                        <td class="px-6 py-4 text-slate-500 max-w-xs truncate">
+                                            <%= item.comments || '—' %>
+                                        </td>
+                                        <td class="px-4 py-3 text-right">
+                                            <form action="/admin/feedback/delete/<%= item.id %>" method="POST" onsubmit="return confirm('Tem certeza que deseja apagar este registro?');" class="inline-block">
+                                                <button type="submit" class="text-slate-400 hover:text-rose-600 transition-colors p-2 rounded-lg hover:bg-rose-50" title="Apagar Registro">
+                                                    <i class="ph ph-trash text-lg"></i>
+                                                </button>
+                                            </form>
+                                        </td>
                                     </tr>
                                 <% }) %>
                             </tbody>
@@ -232,7 +290,7 @@
                             <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                         </span>
                     </div>
-                    
+
                     <div class="w-full aspect-[9/18.5] rounded-[2.5rem] border-[8px] border-slate-900 bg-slate-900 shadow-2xl shadow-slate-200/50 overflow-hidden relative ring-1 ring-slate-900/10">
                         <div class="absolute top-0 inset-x-0 h-6 flex justify-center z-30 pt-2">
                             <div class="w-16 h-4 bg-slate-900 rounded-full flex items-center px-2">
@@ -243,9 +301,7 @@
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
-
 </body>
 </html>
