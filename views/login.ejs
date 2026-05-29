@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diário de Bordo | Acesso</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-white font-sans text-slate-800 antialiased min-h-screen flex">
+    
+    <div class="hidden lg:flex w-1/2 bg-slate-950 text-white flex-col justify-between p-16 relative overflow-hidden">
+        <div class="absolute -top-[20%] -left-[10%] w-[500px] h-[500px] bg-indigo-500/20 blur-[120px] rounded-full pointer-events-none"></div>
+        <div class="absolute -bottom-[20%] -right-[10%] w-[500px] h-[500px] bg-emerald-500/10 blur-[120px] rounded-full pointer-events-none"></div>
+        
+        <div class="relative z-10">
+            <div class="flex items-center gap-2.5 mb-20">
+                <i class="ph ph-compass-rose text-3xl text-slate-300"></i>
+                <span class="font-bold tracking-widest text-xs uppercase text-slate-400">Workspace</span>
+            </div>
+            
+            <h1 class="text-6xl xl:text-7xl font-black tracking-tight leading-[1.1] mb-6">
+                Diário<br>de Bordo.
+            </h1>
+            <p class="text-slate-400 text-lg max-w-md font-medium leading-relaxed">
+                O pulso da sua equipe registrado com clareza. Acompanhe, analise e evolua o clima organizacional de forma contínua.
+            </p>
+        </div>
+        
+        <div class="relative z-10 flex items-center justify-between text-sm font-medium text-slate-500">
+            <span>&copy; <%= new Date().getFullYear() %> Governança Ativa</span>
+            <span>Uso Interno</span>
+        </div>
+    </div>
+
+    <div class="w-full lg:w-1/2 flex items-center justify-center p-8 sm:p-12 lg:p-24 bg-white relative">
+        <div class="w-full max-w-sm">
+            
+            <div class="lg:hidden mb-12 text-center">
+                <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-slate-950 text-white mb-5 shadow-lg shadow-slate-900/20">
+                    <i class="ph ph-compass-rose text-3xl"></i>
+                </div>
+                <h1 class="text-3xl font-black text-slate-900 tracking-tight">Diário de Bordo</h1>
+                <p class="text-slate-500 text-sm mt-2 font-medium">Identifique-se para continuar</p>
+            </div>
+
+            <div class="hidden lg:block mb-10">
+                <h2 class="text-3xl font-bold text-slate-900 tracking-tight mb-2">Bem-vindo de volta</h2>
+                <p class="text-slate-500 font-medium text-sm">Insira seus dados para acessar a plataforma.</p>
+            </div>
+
+            <% if (typeof error !== 'undefined' && error) { %>
+                <div class="bg-rose-50 border border-rose-100 text-rose-600 px-4 py-3.5 rounded-xl mb-6 flex items-center gap-3 text-sm font-semibold animate-pulse">
+                    <i class="ph ph-warning-circle text-xl"></i>
+                    <%= error %>
+                </div>
+            <% } %>
+
+            <form action="/login" method="POST" class="space-y-5">
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2" for="name">Nome Completo</label>
+                    <div class="relative group">
+                        <i class="ph ph-user absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg group-focus-within:text-slate-900 transition-colors"></i>
+                        <input type="text" id="name" name="name" required autocomplete="name"
+                            class="w-full bg-slate-50/50 border border-slate-200 text-slate-900 text-sm py-4 pl-12 pr-4 rounded-xl outline-none focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all placeholder-slate-300 font-medium"
+                            placeholder="Ex: João da Silva">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2" for="email">E-mail Institucional</label>
+                    <div class="relative group">
+                        <i class="ph ph-envelope-simple absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg group-focus-within:text-slate-900 transition-colors"></i>
+                        <input type="email" id="email" name="email" required autocomplete="email"
+                            class="w-full bg-slate-50/50 border border-slate-200 text-slate-900 text-sm py-4 pl-12 pr-4 rounded-xl outline-none focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all placeholder-slate-300 font-medium"
+                            placeholder="seu.email@empresa.com">
+                    </div>
+                </div>
+
+                <div class="pt-4">
+                    <button type="submit" class="w-full bg-slate-950 text-white font-semibold py-4 rounded-xl hover:bg-slate-800 transition-all active:scale-[0.98] shadow-xl shadow-slate-900/10 flex items-center justify-center gap-2 group">
+                        Acessar Plataforma 
+                        <i class="ph ph-arrow-right font-bold group-hover:translate-x-1 transition-transform"></i>
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</body>
+</html>

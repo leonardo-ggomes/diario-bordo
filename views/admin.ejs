@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Avançado de Governança</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                }
+            }
+        }
+    </script>
+
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+        google.charts.load('current', {'packages':['corechart']});
+        google.charts.setOnLoadCallback(() => updateDashboard());
+
+        const rawFeedbacks = <%- JSON.stringify(feedbacks) %>;
+
+        function updateDashboard() {
+            const nameFilter = document.getElementById('filterName').value.toLowerCase();
+            const sentimentFilter = document.getElementById('filterSentiment').value;
+
+            let scores = [0, 0, 0, 0, 0, 0];
+            let totalFiltrados = 0;
+            let somaFiltrados = 0;
+
+            rawFeedbacks.forEach((item) => {
+                const rowEl = document.getElementById(`row-${item.id}`);
+                const studentName = item.User ? item.User.name.toLowerCase() : 'desconhecido';
+                
+                const matchesName = studentName.includes(nameFilter);
+                const matchesSentiment = sentimentFilter === 'all' || item.sentiment_score.toString() === sentimentFilter;
+
+                if (matchesName && matchesSentiment) {
+                    if(rowEl) rowEl.classList.remove('hidden');
+                    scores[item.sentiment_score]++;
+                    totalFiltrados++;
+                    somaFiltrados += item.sentiment_score;
+                } else {
+                    if(rowEl) rowEl.classList.add('hidden');
+                }
+            });
+
+            const novaMedia = totalFiltrados > 0 ? (somaFiltrados / totalFiltrados).toFixed(1) : '0.0';
+            document.getElementById('kpiTotal').innerText = totalFiltrados;
+            document.getElementById('kpiMedia').innerText = novaMedia;
+            
+            let novoClima = '😐';
+            if (novaMedia >= 4.5) novoClima = '🤩';
+            else if (novaMedia >= 3.5) novoClima = '🙂';
+            else if (novaMedia >= 2.5) novoClima = '😐';
+            else novoClima = '😕';
+            document.getElementById('kpiClima').innerText = novoClima;
+
+            var data = google.visualization.arrayToDataTable([
+                ['Humor', 'Quantidade'],
+                ['😫 Crítico', scores[1]],
+                ['😕 Ruim',    scores[2]],
+                ['😐 Neutro',  scores[3]],
+                ['🙂 Bom',     scores[4]],
+                ['🤩 Excelente', scores[5]]
+            ]);
+
+            var options = {
+                pieHole: 0.55,
+                colors: ['#F87171', '#FBBF24', '#94A3B8', '#60A5FA', '#34D399'],
+                chartArea: {width: '100%', height: '85%'},
+                legend: {
+                    position: 'right', 
+                    alignment: 'center',
+                    textStyle: {color: '#64748b', fontSize: 13, fontName: 'Inter'}
+                },
+                backgroundColor: 'transparent',
+                pieSliceBorderColor: 'transparent',
+                tooltip: { textStyle: { fontName: 'Inter', fontSize: 13 } }
+            };
+
+            var chart = new google.visualization.PieChart(document.getElementById('donutchart'));
+            chart.draw(data, options);
+        }
+    </script>
+</head>
+<body class="bg-[#F8FAFC] font-sans min-h-screen antialiased text-slate-800 p-4 md:p-8">
+
+    <div class="max-w-7xl mx-auto">
+        
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between pb-8 mb-8 border-b border-slate-200/70 gap-6">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">Console de Governança</h1>
+                <p class="text-sm text-slate-500 mt-1 font-medium">Mapeamento de clima interno, controle de janelas e auditoria ativa.</p>
+            </div>
+            
+            <div class="flex flex-wrap items-center gap-3">
+                <form action="/admin/toggle-feedback" method="POST" class="inline">
+                    <button type="submit" class="inline-flex items-center gap-2 font-semibold text-xs px-5 py-2.5 rounded-full transition-all duration-200 shadow-sm border <%= isOpen ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100' %>">
+                        <span class="relative flex h-2.5 w-2.5">
+                            <% if(isOpen){ %><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><% } %>
+                            <span class="relative inline-flex rounded-full h-2.5 w-2.5 <%= isOpen ? 'bg-emerald-500' : 'bg-rose-500' %>"></span>
+                        </span>
+                        <%= isOpen ? 'Coleta em andamento' : 'Coleta pausada' %>
+                    </button>
+                </form>
+
+                <a href="/admin/users" class="inline-flex items-center gap-1.5 bg-white text-slate-600 text-xs font-semibold px-4 py-2.5 rounded-lg border border-slate-200 hover:border-slate-300 hover:text-slate-900 hover:shadow-sm transition-all">
+                    <i class="ph ph-users text-base"></i> Usuários
+                </a>
+                <a href="/admin/tags" class="inline-flex items-center gap-1.5 bg-white text-slate-600 text-xs font-semibold px-4 py-2.5 rounded-lg border border-slate-200 hover:border-slate-300 hover:text-slate-900 hover:shadow-sm transition-all">
+                    <i class="ph ph-tag text-base"></i> Marcadores
+                </a>
+                <a href="/logout" class="inline-flex items-center gap-1.5 bg-slate-900 text-white text-xs font-semibold px-4 py-2.5 rounded-lg hover:bg-slate-800 shadow-sm hover:shadow transition-all ml-1">
+                    <i class="ph ph-sign-out text-base"></i> Sair
+                </a>
+            </div>
+        </div>
+
+        <div class="bg-white p-2 rounded-xl border border-slate-200 shadow-sm mb-8 flex flex-col md:flex-row items-center gap-2">
+            <div class="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-widest pl-4 pr-3 py-2 md:border-r border-slate-100 shrink-0">
+                <i class="ph ph-faders text-lg"></i> Filtros
+            </div>
+            <div class="flex-1 w-full relative">
+                <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg"></i>
+                <input type="text" id="filterName" oninput="updateDashboard()" placeholder="Buscar por nome do aluno ou colaborador..." class="w-full bg-transparent text-sm py-3 pl-10 pr-4 outline-none text-slate-700 placeholder-slate-400">
+            </div>
+            <div class="w-full md:w-64 border-t md:border-t-0 md:border-l border-slate-100">
+                <select id="filterSentiment" onchange="updateDashboard()" class="w-full bg-transparent text-sm py-3 px-4 outline-none cursor-pointer text-slate-700 font-medium">
+                    <option value="all">Todos os humores</option>
+                    <option value="5">Excelente</option>
+                    <option value="4">Bom</option>
+                    <option value="3">Neutro</option>
+                    <option value="2">Ruim</option>
+                    <option value="1">Crítico</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <div class="lg:col-span-2 space-y-8">
+                
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex justify-between items-start group hover:border-slate-300 transition-colors">
+                        <div>
+                            <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-2">Índice Médio</p>
+                            <h4 class="text-4xl font-black text-slate-900 tracking-tight" id="kpiMedia"><%= mediaSentimento %></h4>
+                        </div>
+                        <div class="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center border border-slate-100 text-2xl" id="kpiClima"><%= climaGeral %></div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex justify-between items-start group hover:border-slate-300 transition-colors">
+                        <div>
+                            <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-2">Amostras Coletadas</p>
+                            <h4 class="text-4xl font-black text-slate-900 tracking-tight" id="kpiTotal"><%= totalRespostas %></h4>
+                        </div>
+                        <div class="w-12 h-12 rounded-full bg-indigo-50/50 flex items-center justify-center border border-indigo-50 text-indigo-500">
+                            <i class="ph ph-chart-polar text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                    <h3 class="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-4">Distribuição do Clima</h3>
+                    <div id="donutchart" class="w-full h-60"></div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="px-6 py-5 border-b border-slate-100 flex items-center gap-2">
+                        <i class="ph ph-list-dashes text-slate-400 text-lg"></i>
+                        <h3 class="font-semibold text-slate-800 text-sm">Registros Auditados</h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-slate-50/50 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                                <tr>
+                                    <th class="px-6 py-4 border-b border-slate-100">Usuário</th>
+                                    <th class="px-6 py-4 border-b border-slate-100">Humor</th>
+                                    <th class="px-6 py-4 border-b border-slate-100">Marcadores</th>
+                                    <th class="px-6 py-4 border-b border-slate-100">Notas de Contexto</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 text-sm text-slate-600">
+                                <% feedbacks.forEach(item => { %>
+                                    <tr id="row-<%= item.id %>" class="feedback-row hover:bg-slate-50/80 transition-colors">
+                                        <td class="px-6 py-4">
+                                            <div class="font-semibold text-slate-900"><%= item.User ? item.User.name : 'Desconhecido' %></div>
+                                            <div class="text-[11px] text-slate-400 mt-1"><%= new Date(item.createdAt).toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit'}) %></div>
+                                        </td>
+                                        <td class="px-6 py-4 text-2xl select-none">
+                                            <%= {1:'😫', 2:'😕', 3:'😐', 4:'🙂', 5:'🤩'}[item.sentiment_score] %>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <% if (item.tags) { %>
+                                                <div class="flex flex-wrap gap-1.5 max-w-[200px]">
+                                                    <% item.tags.split(',').forEach(tag => { %>
+                                                        <span class="inline-flex items-center px-2 py-1 rounded-md bg-slate-100 text-slate-600 text-[10px] font-semibold border border-slate-200/60">
+                                                            <%= tag.trim() %>
+                                                        </span>
+                                                    <% }) %>
+                                                </div>
+                                            <% } else { %>
+                                                <span class="text-slate-300 italic text-xs">Nenhum</span>
+                                            <% } %>
+                                        </td>
+                                        <td class="px-6 py-4 text-slate-500 max-w-xs truncate"><%= item.comments || '—' %></td>
+                                    </tr>
+                                <% }) %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-1">
+                <div class="sticky top-8">
+                    <div class="flex items-center justify-between mb-4 px-1">
+                        <h3 class="text-[11px] font-semibold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                            <i class="ph ph-device-mobile text-base"></i> Preview Online
+                        </h3>
+                        <span class="flex h-2.5 w-2.5 relative">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                        </span>
+                    </div>
+                    
+                    <div class="w-full aspect-[9/18.5] rounded-[2.5rem] border-[8px] border-slate-900 bg-slate-900 shadow-2xl shadow-slate-200/50 overflow-hidden relative ring-1 ring-slate-900/10">
+                        <div class="absolute top-0 inset-x-0 h-6 flex justify-center z-30 pt-2">
+                            <div class="w-16 h-4 bg-slate-900 rounded-full flex items-center px-2">
+                                <div class="w-1 h-1 rounded-full bg-slate-700 ml-auto"></div>
+                            </div>
+                        </div>
+                        <iframe src="/" class="w-full h-full bg-white z-10 border-none select-none rounded-[2rem] pt-2"></iframe>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</body>
+</html>
